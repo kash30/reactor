@@ -1,0 +1,124 @@
+---
+title: "Scraping Nuclear Reactor"
+author: "Kashish Gujral"
+Date: "November 9, 2020"
+output: html_notebook
+---
+```{r}
+#load packages
+library(rvest)
+library(lubridate)
+library(dplyr)
+library(DataComputing)
+```
+
+```{r}
+page <- "http://en.wikipedia.org/wiki/List_of_nuclear_reactors"
+tableList <- page %>%
+  read_html() %>%
+  html_nodes(css = "table") %>%
+  html_table(fill = TRUE)
+
+head(tableList[[22]])
+```
+# Your Turn 1
+#### Q - In what ways is the table tidy? How is it not tidy? What’s different about it from a tidy table?
+#### A - The table is not tidy. There are variables that are repeating themselves and that doesn't make a tody table. A tidy table would have a row with no variables repeating and have columns with similar data in them.
+
+```{r}
+names(Japan)[c(3,7)] <- c("type", "grossMW")
+
+Japan <- Japan %>%
+  filter(row_number() > 1) %>%
+  rename(name = Name, 
+         reactor = `UnitNo.`,
+         model = Reactor,
+         status = Status, 
+         netMW = `Capacity in MW`,
+         construction = `Construction start`,
+         operation = `Commercial operation`, 
+         closure = Closure) %>%
+  mutate(netMW = as.numeric(netMW), grossMW = as.numeric(grossMW)) %>%
+  mutate(construction = dmy(construction), operation = dmy(operation), 
+         closure =dmy(closure))
+
+# Inspect Result
+head(Japan)
+str(Japan)
+```
+# Your Turn 2
+#### Most of the nuclear reactors use BWR - Boiling water reactor and PWR - Pressurized water reactor
+```{r}
+Japan %>%
+  ggplot(aes(y = netMW, x = construction)) + geom_point(aes(color = type))
+```
+
+# Your Turn 3
+```{r}
+China <- tableList[[10]]
+names(China)[c(3,7)] <- c("type", "grossMW")
+
+China <- China %>%
+  filter(row_number() > 1) %>%
+  rename(name = Name, 
+         reactor = `UnitNo.`,
+         model = Reactor,
+         status = Status, 
+         netMW = `Capacity in MW`,
+         construction = `Construction start`,
+         operation = `Commercial operation`, 
+         closure = Closure) %>%
+  mutate(netMW = as.numeric(netMW), grossMW = as.numeric(grossMW)) %>%
+  mutate(construction = dmy(construction), operation = dmy(operation), 
+         closure =dmy(closure))
+
+# Inspect Result
+head(China)
+str(China)
+```
+```{r}
+Japan <- Japan %>%
+  mutate(country = "Japan") # make a new variable called "country" for Japan data
+
+China <- China %>%
+  mutate(closure = ymd(closure),# convert this variable to a date format for China data
+  country = "China")# make a new variable called "country" for China data
+
+China_Japan <- rbind(China, Japan)
+```
+
+# Your Turn 4
+```{r}
+names(Italy)[c(3,7)] <- c("type", "grossMW")
+
+Italy <- Italy %>%
+  filter(row_number() > 1) %>%
+  rename(name = Name, 
+         reactor = `UnitNo.`,
+         model = Reactor,
+         status = Status, 
+         netMW = `Capacity in MW`,
+         construction = `Construction start`,
+         operation = `Commercial operation`, 
+         closure = Closure) %>%
+  mutate(netMW = as.numeric(netMW), grossMW = as.numeric(grossMW)) %>%
+  mutate(construction = dmy(construction), operation = dmy(operation), 
+         closure =dmy(closure))
+
+# Inspect Result
+head(Italy)
+str(Italy)
+
+
+```
+
+```{r}
+
+Italy %>%
+  mutate(name_reactor = paste(name, reactor)) %>%
+  ggplot(aes(y = name_reactor, x = operation, size = 4)) +
+  geom_segment(aes(y = name_reactor, yend = name_reactor, 
+                   x = construction, xend = operation, color = type)) +
+  geom_point(aes(y = name_reactor, x = closure, shape = status))
+```
+
